@@ -1,0 +1,32 @@
+{
+  "type": "RealTimeGraphRenderer",
+  "config": {
+    "microphoneEnabled": true,
+    "graph": {
+      "config": {
+        "sampleRate": 16000,
+        "bufferSize": 512
+      },
+      "nodes": [
+        {
+          "id": "multiChannelToMonoNode",
+          "type": "MultiChannelToMono"
+        },
+        {
+          "id": "vadNode",
+          "type": "SileroVAD.SileroVAD"
+        }
+      ],
+      "connections": [
+        {
+          "sourceNode": "inputNode",
+          "destinationNode": "multiChannelToMonoNode"
+        },
+        {
+          "sourceNode": "multiChannelToMonoNode",
+          "destinationNode": "vadNode"
+        }
+      ]
+    }
+  }
+}

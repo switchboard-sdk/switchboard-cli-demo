@@ -22,11 +22,10 @@ set(SwitchboardSDK_DIR "${CMAKE_BINARY_DIR}/SwitchboardSDK")
 
 # Function to download and extract a zip package
 function(download_and_extract url file_name output_dir)
-    if (APPLE)
-        # TODO: Apple should also use .tar.gz?
-        set(zip_file "${SwitchboardSDK_DIR}/Downloads/${file_name}.zip")
-    else()
+    if(${SwitchboardSDK_PLATFORM} STREQUAL "windows")
         set(zip_file "${SwitchboardSDK_DIR}/Downloads/${file_name}.tar.gz")
+    else()
+        set(zip_file "${SwitchboardSDK_DIR}/Downloads/${file_name}.zip")
     endif()
 
     # Ensure the Downloads directory exists
@@ -35,7 +34,15 @@ function(download_and_extract url file_name output_dir)
     # Download if the zip file does not exist
     if(NOT EXISTS ${zip_file})
         message(STATUS "Downloading ${file_name} from ${url}")
-        file(DOWNLOAD ${url} ${zip_file} SHOW_PROGRESS)
+        file(DOWNLOAD ${url} ${zip_file}
+                SHOW_PROGRESS
+                STATUS download_status
+                LOG download_log)
+        list(GET download_status 0 status_code)
+        list(GET download_status 1 status_string)
+        if(NOT status_code EQUAL 0)
+            message(FATAL_ERROR "Download failed with status ${status_code}: ${status_string}\nLog:\n${download_log}")
+        endif()
     endif()
 
     # Ensure output directory exists and extract only if needed
@@ -61,10 +68,10 @@ function(find_switchboard_package PACKAGE_NAME PACKAGE_VERSION)
     endif ()
 
     # Construct the URL dynamically
-    if (APPLE)
-        set(SWITCHBOARD_PACKAGE_URL "https://switchboard-sdk-public.s3.amazonaws.com/builds/release/${PACKAGE_VERSION}/${SwitchboardSDK_PLATFORM}/${PACKAGE_NAME}.zip")
-    else()
+    if (${SwitchboardSDK_PLATFORM} STREQUAL "windows")
         set(SWITCHBOARD_PACKAGE_URL "https://switchboard-sdk-public.s3.amazonaws.com/builds/release/${PACKAGE_VERSION}/${SwitchboardSDK_PLATFORM}/${PACKAGE_NAME}.tar.gz")
+    else()
+        set(SWITCHBOARD_PACKAGE_URL "https://switchboard-sdk-public.s3.amazonaws.com/builds/release/${PACKAGE_VERSION}/${SwitchboardSDK_PLATFORM}/${PACKAGE_NAME}.zip")
     endif()
     set(SWITCHBOARD_PACKAGE_DIR "${SwitchboardSDK_DIR}/libs/${PACKAGE_NAME}/${SwitchboardSDK_PLATFORM}/${PACKAGE_VERSION}")
 
@@ -94,6 +101,10 @@ function(find_switchboard_package PACKAGE_NAME PACKAGE_VERSION)
             IMPORTED_LOCATION "${SWITCHBOARD_PACKAGE_DIR}/Debug/AMD64/${PACKAGE_NAME}.dll"
         )
         list(APPEND SwitchboardSDK_PACKAGE_DIRECTORIES_RELEASE ${SWITCHBOARD_PACKAGE_DIR}/Release/AMD64 PARENT_SCOPE)
+    elseif(${SwitchboardSDK_PLATFORM} STREQUAL "linux")
+        set_target_properties(${PACKAGE_NAME} PROPERTIES
+            IMPORTED_LOCATION "${SWITCHBOARD_PACKAGE_DIR}/Release/${CMAKE_SYSTEM_PROCESSOR}/lib${PACKAGE_NAME}.so"
+        )
     else ()
         message(FATAL_ERROR "Unsupported platform: ${CMAKE_SYSTEM_NAME}")
     endif()

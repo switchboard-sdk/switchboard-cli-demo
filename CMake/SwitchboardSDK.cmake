@@ -59,4 +59,13 @@ function(switchboard_add_console_app)
             install(IMPORTED_RUNTIME_ARTIFACTS ${library})
         endforeach()
     endif()
+    if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+        set_target_properties(${TARGET_NAME} PROPERTIES
+                INSTALL_RPATH "$ORIGIN/../lib"
+        )
+        install(TARGETS ${TARGET_NAME})
+        foreach(library ${SwitchboardSDK_LIBRARIES})
+            install(IMPORTED_RUNTIME_ARTIFACTS ${library})
+        endforeach()
+    endif()
 endfunction()

@@ -27,9 +27,15 @@ cmake -B build .
 cmake --build build --config Release
 cmake --install build --config Release --prefix out
 cd out/bin
-./Sine # or ./TTS ./STT ./STTtoTTS 
+./Sine.exe # or ./TTS.exe ./STT.exe ./STTtoTTS.exe
 ```
 
 ### Linux
 
-Coming soon...
+```bash
+cmake -B build .
+cmake --build build --config Release
+cmake --install build --config Release --prefix out
+cd out/bin
+./Sine # or ./TTS ./STT ./STTtoTTS 
+```
