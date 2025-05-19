@@ -1,0 +1,19 @@
+{
+    "type": "RealTimeGraphRenderer",
+    "config": {
+        "graph": {
+            "nodes": [
+                {
+                    "id": "sineNode",
+                    "type": "Switchboard.SineGenerator"
+                }
+            ],
+            "connections": [
+                {
+                    "sourceNode": "sineNode",
+                    "destinationNode": "outputNode"
+                }
+            ]
+        }
+    }
+}
