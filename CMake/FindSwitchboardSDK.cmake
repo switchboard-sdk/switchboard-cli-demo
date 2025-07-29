@@ -4,7 +4,7 @@
 set(SwitchboardSDK_FOUND FALSE)
 
 if(NOT DEFINED SWITCHBOARD_PACKAGE_VERSION)
-    set(SWITCHBOARD_PACKAGE_VERSION "2.3.1") # Default version
+    set(SWITCHBOARD_PACKAGE_VERSION "3.0.0") # Default version
 endif()
 
 # Detect platform (adjust as needed)
@@ -81,7 +81,11 @@ function(find_switchboard_package PACKAGE_NAME PACKAGE_VERSION)
 
     # Define package as an INTERFACE library
     add_library(${PACKAGE_NAME} SHARED IMPORTED)
-    target_include_directories(${PACKAGE_NAME} INTERFACE ${SWITCHBOARD_PACKAGE_DIR}/include)
+    if(EXISTS "${SWITCHBOARD_PACKAGE_DIR}/Release/${CMAKE_SYSTEM_PROCESSOR}/include")
+        target_include_directories(${PACKAGE_NAME} INTERFACE ${SWITCHBOARD_PACKAGE_DIR}/Release/${CMAKE_SYSTEM_PROCESSOR}/include)
+    else()
+        target_include_directories(${PACKAGE_NAME} INTERFACE ${SWITCHBOARD_PACKAGE_DIR}/include)
+    endif()
     if(${SwitchboardSDK_PLATFORM} STREQUAL "macos")
         set_target_properties(${PACKAGE_NAME} PROPERTIES
             IMPORTED_LOCATION "${SWITCHBOARD_PACKAGE_DIR}/${PACKAGE_NAME}.xcframework"
