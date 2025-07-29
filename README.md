@@ -13,9 +13,7 @@ Ensure you have the following installed:
 ### macOS
 
 ```bash
-cmake -B build -G Xcode .
-cmake --build build --config Release
-cmake --install build --config Release --prefix out
+inv build-macos --clean
 cd out/bin
 ./Sine # or ./TTS ./STT ./STTtoTTS 
 ```
@@ -23,9 +21,7 @@ cd out/bin
 ### Windows
 
 ```bash
-cmake -B build .
-cmake --build build --config Release
-cmake --install build --config Release --prefix out
+inv build-windows --clean
 cd out/bin
 ./Sine.exe # or ./TTS.exe ./STT.exe ./STTtoTTS.exe
 ```
@@ -33,9 +29,7 @@ cd out/bin
 ### Linux
 
 ```bash
-cmake -B build .
-cmake --build build --config Release
-cmake --install build --config Release --prefix out
+inv build-linux --clean
 cd out/bin
 ./Sine # or ./TTS ./STT ./STTtoTTS 
 ```
