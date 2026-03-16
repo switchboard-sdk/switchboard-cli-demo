@@ -1,5 +1,5 @@
 {
-  "type": "RealTimeGraphRenderer",
+  "type": "Realtime",
   "config": {
     "microphoneEnabled": true,
     "graph": {
@@ -14,7 +14,7 @@
         },
         {
           "id": "vadNode",
-          "type": "SileroVAD.SileroVAD"
+          "type": "SileroVAD.VAD"
         }
       ],
       "connections": [

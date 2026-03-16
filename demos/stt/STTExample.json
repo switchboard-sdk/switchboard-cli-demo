@@ -1,5 +1,5 @@
 {
-    "type": "RealTimeGraphRenderer",
+    "type": "Realtime",
     "config": {
         "microphoneEnabled": true,
         "graph": {
@@ -18,11 +18,11 @@
                 },
                 {
                     "id": "vadNode",
-                    "type": "SileroVAD.SileroVAD"
+                    "type": "SileroVAD.VAD"
                 },
                 {
                     "id": "sttNode",
-                    "type": "Whisper.WhisperSTT",
+                    "type": "Whisper.STT",
                     "config": {
                         "initializeModel": true,
                         "useGPU": true
@@ -47,7 +47,7 @@
                     "destinationNode": "sttNode"
                 },
                 {
-                    "sourceNode": "vadNode.end",
+                    "sourceNode": "vadNode.speechEnded",
                     "destinationNode": "sttNode.transcribe"
                 }
             ]
