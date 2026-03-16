@@ -95,17 +95,32 @@ function(find_switchboard_package PACKAGE_NAME PACKAGE_VERSION)
         endif()
         set(SwitchboardSDK_FRAMEWORK_PATHS ${SwitchboardSDK_FRAMEWORK_PATHS} ${FRAMEWORK_PATH} PARENT_SCOPE)
     elseif(${SwitchboardSDK_PLATFORM} STREQUAL "windows")
-        set_target_properties(${PACKAGE_NAME} PROPERTIES
-            IMPORTED_IMPLIB_RELEASE "${SWITCHBOARD_PACKAGE_DIR}/Release/AMD64/lib/${PACKAGE_NAME}.lib"
-            IMPORTED_LOCATION_RELEASE "${SWITCHBOARD_PACKAGE_DIR}/Release/AMD64/lib/${PACKAGE_NAME}.dll"
-            IMPORTED_IMPLIB "${SWITCHBOARD_PACKAGE_DIR}/Debug/AMD64/lib/${PACKAGE_NAME}.lib"
-            IMPORTED_LOCATION "${SWITCHBOARD_PACKAGE_DIR}/Debug/AMD64/lib/${PACKAGE_NAME}.dll"
-        )
+        if(EXISTS "${SWITCHBOARD_PACKAGE_DIR}/Release/AMD64/lib" AND EXISTS "${SWITCHBOARD_PACKAGE_DIR}/Debug/AMD64/lib")
+            set_target_properties(${PACKAGE_NAME} PROPERTIES
+                IMPORTED_IMPLIB_RELEASE "${SWITCHBOARD_PACKAGE_DIR}/Release/AMD64/lib/${PACKAGE_NAME}.lib"
+                IMPORTED_LOCATION_RELEASE "${SWITCHBOARD_PACKAGE_DIR}/Release/AMD64/lib/${PACKAGE_NAME}.dll"
+                IMPORTED_IMPLIB "${SWITCHBOARD_PACKAGE_DIR}/Debug/AMD64/lib/${PACKAGE_NAME}.lib"
+                IMPORTED_LOCATION "${SWITCHBOARD_PACKAGE_DIR}/Debug/AMD64/lib/${PACKAGE_NAME}.dll"
+            )
+        else()
+            set_target_properties(${PACKAGE_NAME} PROPERTIES
+                    IMPORTED_IMPLIB_RELEASE "${SWITCHBOARD_PACKAGE_DIR}/Release/AMD64/${PACKAGE_NAME}.lib"
+                    IMPORTED_LOCATION_RELEASE "${SWITCHBOARD_PACKAGE_DIR}/Release/AMD64/${PACKAGE_NAME}.dll"
+                    IMPORTED_IMPLIB "${SWITCHBOARD_PACKAGE_DIR}/Debug/AMD64/${PACKAGE_NAME}.lib"
+                    IMPORTED_LOCATION "${SWITCHBOARD_PACKAGE_DIR}/Debug/AMD64/${PACKAGE_NAME}.dll"
+            )
+        endif()
         list(APPEND SwitchboardSDK_PACKAGE_DIRECTORIES_RELEASE ${SWITCHBOARD_PACKAGE_DIR}/Release/AMD64 PARENT_SCOPE)
     elseif(${SwitchboardSDK_PLATFORM} STREQUAL "linux")
-        set_target_properties(${PACKAGE_NAME} PROPERTIES
-            IMPORTED_LOCATION "${SWITCHBOARD_PACKAGE_DIR}/Release/${CMAKE_SYSTEM_PROCESSOR}/lib/lib${PACKAGE_NAME}.so"
-        )
+        if(EXISTS "${SWITCHBOARD_PACKAGE_DIR}/Release/${CMAKE_SYSTEM_PROCESSOR}/lib")
+            set_target_properties(${PACKAGE_NAME} PROPERTIES
+                    IMPORTED_LOCATION "${SWITCHBOARD_PACKAGE_DIR}/Release/${CMAKE_SYSTEM_PROCESSOR}/lib/lib${PACKAGE_NAME}.so"
+            )
+        else()
+            set_target_properties(${PACKAGE_NAME} PROPERTIES
+                IMPORTED_LOCATION "${SWITCHBOARD_PACKAGE_DIR}/Release/${CMAKE_SYSTEM_PROCESSOR}/lib${PACKAGE_NAME}.so"
+            )
+        endif()
     else ()
         message(FATAL_ERROR "Unsupported platform: ${CMAKE_SYSTEM_NAME}")
     endif()
