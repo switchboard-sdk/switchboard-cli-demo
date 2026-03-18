@@ -4,7 +4,7 @@
 set(SwitchboardSDK_FOUND FALSE)
 
 if(NOT DEFINED SWITCHBOARD_PACKAGE_VERSION)
-    set(SWITCHBOARD_PACKAGE_VERSION "3.0.0") # Default version
+    set(SWITCHBOARD_PACKAGE_VERSION "3.2.0") # Default version
 endif()
 
 # Detect platform (adjust as needed)
@@ -22,11 +22,7 @@ set(SwitchboardSDK_DIR "${CMAKE_BINARY_DIR}/SwitchboardSDK")
 
 # Function to download and extract a zip package
 function(download_and_extract url file_name output_dir)
-    if(${SwitchboardSDK_PLATFORM} STREQUAL "windows")
-        set(zip_file "${SwitchboardSDK_DIR}/Downloads/${file_name}.tar.gz")
-    else()
-        set(zip_file "${SwitchboardSDK_DIR}/Downloads/${file_name}.zip")
-    endif()
+    set(zip_file "${SwitchboardSDK_DIR}/Downloads/${file_name}.zip")
 
     # Ensure the Downloads directory exists
     file(MAKE_DIRECTORY "${SwitchboardSDK_DIR}/Downloads")
@@ -68,11 +64,7 @@ function(find_switchboard_package PACKAGE_NAME PACKAGE_VERSION)
     endif ()
 
     # Construct the URL dynamically
-    if (${SwitchboardSDK_PLATFORM} STREQUAL "windows")
-        set(SWITCHBOARD_PACKAGE_URL "https://switchboard-sdk-public.s3.amazonaws.com/builds/release/${PACKAGE_VERSION}/${SwitchboardSDK_PLATFORM}/${PACKAGE_NAME}.tar.gz")
-    else()
-        set(SWITCHBOARD_PACKAGE_URL "https://switchboard-sdk-public.s3.amazonaws.com/builds/release/${PACKAGE_VERSION}/${SwitchboardSDK_PLATFORM}/${PACKAGE_NAME}.zip")
-    endif()
+    set(SWITCHBOARD_PACKAGE_URL "https://switchboard-sdk-public.s3.amazonaws.com/builds/release/${PACKAGE_VERSION}/${SwitchboardSDK_PLATFORM}/${PACKAGE_NAME}.zip")
     set(SWITCHBOARD_PACKAGE_DIR "${SwitchboardSDK_DIR}/libs/${PACKAGE_NAME}/${SwitchboardSDK_PLATFORM}/${PACKAGE_VERSION}")
 
     # Download and extract the package
@@ -82,11 +74,16 @@ function(find_switchboard_package PACKAGE_NAME PACKAGE_VERSION)
     # Define package as an INTERFACE library
     add_library(${PACKAGE_NAME} SHARED IMPORTED)
     if(EXISTS "${SWITCHBOARD_PACKAGE_DIR}/Release/${CMAKE_SYSTEM_PROCESSOR}/include")
-        target_include_directories(${PACKAGE_NAME} INTERFACE ${SWITCHBOARD_PACKAGE_DIR}/Release/${CMAKE_SYSTEM_PROCESSOR}/include)
+        target_include_directories(${PACKAGE_NAME} INTERFACE "${SWITCHBOARD_PACKAGE_DIR}/Release/${CMAKE_SYSTEM_PROCESSOR}/include")
+    elseif(EXISTS "${SWITCHBOARD_PACKAGE_DIR}/Release/include")
+        target_include_directories(${PACKAGE_NAME} INTERFACE "${SWITCHBOARD_PACKAGE_DIR}/Release/include")
     else()
-        target_include_directories(${PACKAGE_NAME} INTERFACE ${SWITCHBOARD_PACKAGE_DIR}/include)
+        target_include_directories(${PACKAGE_NAME} INTERFACE "${SWITCHBOARD_PACKAGE_DIR}/include")
     endif()
     if(${SwitchboardSDK_PLATFORM} STREQUAL "macos")
+        if(EXISTS "${SWITCHBOARD_PACKAGE_DIR}/Release")
+            set(SWITCHBOARD_PACKAGE_DIR "${SWITCHBOARD_PACKAGE_DIR}/Release")
+        endif()
         set_target_properties(${PACKAGE_NAME} PROPERTIES
             IMPORTED_LOCATION "${SWITCHBOARD_PACKAGE_DIR}/${PACKAGE_NAME}.xcframework"
         )
@@ -98,17 +95,32 @@ function(find_switchboard_package PACKAGE_NAME PACKAGE_VERSION)
         endif()
         set(SwitchboardSDK_FRAMEWORK_PATHS ${SwitchboardSDK_FRAMEWORK_PATHS} ${FRAMEWORK_PATH} PARENT_SCOPE)
     elseif(${SwitchboardSDK_PLATFORM} STREQUAL "windows")
-        set_target_properties(${PACKAGE_NAME} PROPERTIES
-            IMPORTED_IMPLIB_RELEASE "${SWITCHBOARD_PACKAGE_DIR}/Release/AMD64/${PACKAGE_NAME}.lib"
-            IMPORTED_LOCATION_RELEASE "${SWITCHBOARD_PACKAGE_DIR}/Release/AMD64/${PACKAGE_NAME}.dll"
-            IMPORTED_IMPLIB "${SWITCHBOARD_PACKAGE_DIR}/Debug/AMD64/${PACKAGE_NAME}.lib"
-            IMPORTED_LOCATION "${SWITCHBOARD_PACKAGE_DIR}/Debug/AMD64/${PACKAGE_NAME}.dll"
-        )
-        list(APPEND SwitchboardSDK_PACKAGE_DIRECTORIES_RELEASE ${SWITCHBOARD_PACKAGE_DIR}/Release/AMD64 PARENT_SCOPE)
+        if(EXISTS "${SWITCHBOARD_PACKAGE_DIR}/Release/${CMAKE_SYSTEM_PROCESSOR}/lib" AND EXISTS "${SWITCHBOARD_PACKAGE_DIR}/Debug/${CMAKE_SYSTEM_PROCESSOR}/lib"
+            AND EXISTS "${SWITCHBOARD_PACKAGE_DIR}/Release/${CMAKE_SYSTEM_PROCESSOR}/bin" AND EXISTS "${SWITCHBOARD_PACKAGE_DIR}/Debug/${CMAKE_SYSTEM_PROCESSOR}/bin")
+            set_target_properties(${PACKAGE_NAME} PROPERTIES
+                IMPORTED_IMPLIB_RELEASE "${SWITCHBOARD_PACKAGE_DIR}/Release/${CMAKE_SYSTEM_PROCESSOR}/lib/${PACKAGE_NAME}.lib"
+                IMPORTED_LOCATION_RELEASE "${SWITCHBOARD_PACKAGE_DIR}/Release/${CMAKE_SYSTEM_PROCESSOR}/bin/${PACKAGE_NAME}.dll"
+                IMPORTED_IMPLIB "${SWITCHBOARD_PACKAGE_DIR}/Debug/${CMAKE_SYSTEM_PROCESSOR}/lib/${PACKAGE_NAME}.lib"
+                IMPORTED_LOCATION "${SWITCHBOARD_PACKAGE_DIR}/Debug/${CMAKE_SYSTEM_PROCESSOR}/bin/${PACKAGE_NAME}.dll"
+            )
+        else()
+            set_target_properties(${PACKAGE_NAME} PROPERTIES
+                    IMPORTED_IMPLIB_RELEASE "${SWITCHBOARD_PACKAGE_DIR}/Release/${CMAKE_SYSTEM_PROCESSOR}/${PACKAGE_NAME}.lib"
+                    IMPORTED_LOCATION_RELEASE "${SWITCHBOARD_PACKAGE_DIR}/Release/${CMAKE_SYSTEM_PROCESSOR}/${PACKAGE_NAME}.dll"
+                    IMPORTED_IMPLIB "${SWITCHBOARD_PACKAGE_DIR}/Debug/${CMAKE_SYSTEM_PROCESSOR}/${PACKAGE_NAME}.lib"
+                    IMPORTED_LOCATION "${SWITCHBOARD_PACKAGE_DIR}/Debug/${CMAKE_SYSTEM_PROCESSOR}/${PACKAGE_NAME}.dll"
+            )
+        endif()
     elseif(${SwitchboardSDK_PLATFORM} STREQUAL "linux")
-        set_target_properties(${PACKAGE_NAME} PROPERTIES
-            IMPORTED_LOCATION "${SWITCHBOARD_PACKAGE_DIR}/Release/${CMAKE_SYSTEM_PROCESSOR}/lib${PACKAGE_NAME}.so"
-        )
+        if(EXISTS "${SWITCHBOARD_PACKAGE_DIR}/Release/${CMAKE_SYSTEM_PROCESSOR}/lib")
+            set_target_properties(${PACKAGE_NAME} PROPERTIES
+                    IMPORTED_LOCATION "${SWITCHBOARD_PACKAGE_DIR}/Release/${CMAKE_SYSTEM_PROCESSOR}/lib/lib${PACKAGE_NAME}.so"
+            )
+        else()
+            set_target_properties(${PACKAGE_NAME} PROPERTIES
+                IMPORTED_LOCATION "${SWITCHBOARD_PACKAGE_DIR}/Release/${CMAKE_SYSTEM_PROCESSOR}/lib${PACKAGE_NAME}.so"
+            )
+        endif()
     else ()
         message(FATAL_ERROR "Unsupported platform: ${CMAKE_SYSTEM_NAME}")
     endif()
@@ -120,7 +132,7 @@ endfunction()
 find_switchboard_package("SwitchboardSDK" "${SWITCHBOARD_PACKAGE_VERSION}")
 if (SwitchboardSDK_FOUND)
     set(SwitchboardSDK_LIBRARIES ${SwitchboardSDK_LIBRARIES} "SwitchboardSDK")
-    set(SwitchboardSDK_PACKAGE_DIRECTORIES_RELEASE ${SwitchboardSDK_PACKAGE_DIRECTORIES_RELEASE} "${SwitchboardSDK_DIR}/libs/SwitchboardSDK/${SwitchboardSDK_PLATFORM}/${SWITCHBOARD_PACKAGE_VERSION}/Release/AMD64")
+    set(SwitchboardSDK_PACKAGE_DIRECTORIES_RELEASE ${SwitchboardSDK_PACKAGE_DIRECTORIES_RELEASE} "${SwitchboardSDK_DIR}/libs/SwitchboardSDK/${SwitchboardSDK_PLATFORM}/${SWITCHBOARD_PACKAGE_VERSION}/Release/${CMAKE_SYSTEM_PROCESSOR}")
 else()
     message(SEND_ERROR "Could not find SwitchboardSDK")
 endif ()
@@ -131,7 +143,14 @@ foreach(_comp IN LISTS SwitchboardSDK_FIND_COMPONENTS)
     find_switchboard_package(${_comp} "${SWITCHBOARD_PACKAGE_VERSION}")
     if(${_comp}_FOUND)
         set(package_dir "${SwitchboardSDK_DIR}/libs/${_comp}/${SwitchboardSDK_PLATFORM}/${SWITCHBOARD_PACKAGE_VERSION}")
-        set(SwitchboardSDK_PACKAGE_DIRECTORIES_RELEASE ${SwitchboardSDK_PACKAGE_DIRECTORIES_RELEASE} ${package_dir}/Release/AMD64)
+        message(STATUS "Found SwitchboardSDK component: ${_comp} at ${package_dir}")
+        if(EXISTS "${package_dir}/Release/${CMAKE_SYSTEM_PROCESSOR}/bin")
+            message(STATUS "Adding ${package_dir}/Release/${CMAKE_SYSTEM_PROCESSOR}/bin to package directories for ${_comp}")
+            set(SwitchboardSDK_PACKAGE_DIRECTORIES_RELEASE ${SwitchboardSDK_PACKAGE_DIRECTORIES_RELEASE} "${package_dir}/Release/${CMAKE_SYSTEM_PROCESSOR}/bin")
+        else()
+            message(STATUS "Adding ${package_dir}/Release/${CMAKE_SYSTEM_PROCESSOR} to package directories for ${_comp}")
+            set(SwitchboardSDK_PACKAGE_DIRECTORIES_RELEASE ${SwitchboardSDK_PACKAGE_DIRECTORIES_RELEASE} "${package_dir}/Release/${CMAKE_SYSTEM_PROCESSOR}")
+        endif()
         set(SwitchboardSDK_LIBRARIES ${SwitchboardSDK_LIBRARIES} ${_comp})
     else()
         list(APPEND _missing_components ${_comp})

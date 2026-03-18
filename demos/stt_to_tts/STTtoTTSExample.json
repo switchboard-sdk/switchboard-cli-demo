@@ -1,5 +1,5 @@
 {
-    "type": "RealTimeGraphRenderer",
+    "type": "Realtime",
     "config": {
         "microphoneEnabled": true,
         "graph": {
@@ -18,11 +18,11 @@
                 },
                 {
                     "id": "vadNode",
-                    "type": "SileroVAD.SileroVAD"
+                    "type": "SileroVAD.VAD"
                 },
                 {
                     "id": "sttNode",
-                    "type": "Whisper.WhisperSTT",
+                    "type": "Whisper.STT",
                     "config": {
                         "initializeModel": true,
                         "useGPU": true
@@ -30,7 +30,7 @@
                 },
                 {
                     "id": "ttsNode",
-                    "type": "Sherpa.SherpaTTSNode"
+                    "type": "Sherpa.TTS"
                 },
                 {
                     "id": "monoToMultiChannelNode",
@@ -63,11 +63,11 @@
                     "destinationNode": "outputNode"
                 },
                 {
-                    "sourceNode": "vadNode.end",
+                    "sourceNode": "vadNode.speechEnded",
                     "destinationNode": "sttNode.transcribe"
                 },
                 {
-                    "sourceNode": "sttNode.transcription",
+                    "sourceNode": "sttNode.transcribed",
                     "destinationNode": "ttsNode.synthesize"
                 }
             ]

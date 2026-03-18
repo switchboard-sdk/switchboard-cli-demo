@@ -14,7 +14,7 @@ static std::optional<std::string> readContentsOfTextFile(const std::string& file
         return std::nullopt;
     }
     std::ifstream fileStream(filePath);
-    std::string fileContent((std::istreambuf_iterator<char>(fileStream)), std::istreambuf_iterator<char>());
+    std::string fileContent((std::istreambuf_iterator(fileStream)), std::istreambuf_iterator<char>());
     return fileContent;
 }
 
@@ -29,11 +29,11 @@ int main(int argc, const char* argv[]) {
 
     // Init Switchboard SDK and extensions
     extensions::silerovad::SileroVADExtension::load();
-    Config sdkConfig({
+    SBAnyMap sdkConfig({
         { "appID", "demo" },
         { "appSecret", "demo" },
-        { "extensions", Config({
-            {"SileroVAD", Config()}
+        { "extensions", SBAnyMap({
+            {"SileroVAD", SBAnyMap()}
         })}
     });
     Switchboard::initialize(sdkConfig);
@@ -47,10 +47,10 @@ int main(int argc, const char* argv[]) {
     const std::string engineID = result.value();
 
     // Add voise activity event listeners
-    Switchboard::addEventListener("vadNode", "start", [](const std::any& data) {
+    Switchboard::addEventListener("vadNode", "speechStarted", [](const Event& event) {
         std::cout << "Speech start" << std::endl;
     });
-    Switchboard::addEventListener("vadNode", "end", [](const std::any& data) {
+    Switchboard::addEventListener("vadNode", "speechEnded", [](const Event& event) {
         std::cout << "Speech end" << std::endl;
     });
 

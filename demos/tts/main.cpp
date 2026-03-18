@@ -30,11 +30,11 @@ int main(int argc, const char* argv[]) {
 
     // Init Switchboard SDK and extensions
     extensions::sherpa::SherpaExtension::load();
-    Config sdkConfig({
+    SBAnyMap sdkConfig({
         { "appID", "demo" },
         { "appSecret", "demo" },
-        { "extensions", Config({
-            {"Sherpa", Config()}
+        { "extensions", SBAnyMap({
+            {"Sherpa", SBAnyMap()}
         })}
     });
     Switchboard::initialize(sdkConfig);

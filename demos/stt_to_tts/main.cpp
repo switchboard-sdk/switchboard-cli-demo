@@ -17,7 +17,7 @@ static std::optional<std::string> readContentsOfTextFile(const std::string& file
         return std::nullopt;
     }
     std::ifstream fileStream(filePath);
-    std::string fileContent((std::istreambuf_iterator<char>(fileStream)), std::istreambuf_iterator<char>());
+    std::string fileContent((std::istreambuf_iterator(fileStream)), std::istreambuf_iterator<char>());
     return fileContent;
 }
 
@@ -34,13 +34,13 @@ int main(int argc, const char* argv[]) {
     extensions::silerovad::SileroVADExtension::load();
     extensions::whisper::WhisperExtension::load();
     extensions::sherpa::SherpaExtension::load();
-    Config sdkConfig({
+    SBAnyMap sdkConfig({
         { "appID", "demo" },
         { "appSecret", "demo" },
-        { "extensions", Config({
-            {"Sherpa", Config()},
-            {"SileroVAD", Config()},
-            {"Whisper", Config()}
+        { "extensions", SBAnyMap({
+            {"Sherpa", SBAnyMap()},
+            {"SileroVAD", SBAnyMap()},
+            {"Whisper", SBAnyMap()}
         })}
     });
     Switchboard::initialize(sdkConfig);
@@ -54,8 +54,9 @@ int main(int argc, const char* argv[]) {
     const std::string engineID = result.value();
 
     // Add listener for transcription event
-    Switchboard::addEventListener("sttNode", "transcription", [](const std::any& data) {
-        const auto text = std::any_cast<std::string>(data);
+    Switchboard::addEventListener("sttNode", "transcribed", [](const Event& event) {
+        const auto params = SBAny::convert<SBAnyMap>(event.data);
+        const auto text = SBAny::convert<std::string>(params.at("text"));
         std::cout << "STT node transcribed: " << text << std::endl;
     });
 

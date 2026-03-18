@@ -1,5 +1,5 @@
 {
-    "type": "RealTimeGraphRenderer",
+    "type": "Realtime",
     "config": {
         "microphoneEnabled": false,
         "graph": {
@@ -9,7 +9,7 @@
             "nodes": [
                 {
                     "id": "ttsNode",
-                    "type": "Sherpa.SherpaTTSNode"
+                    "type": "Sherpa.TTS"
                 },
                 {
                     "id": "monoToMultiChannelNode",
