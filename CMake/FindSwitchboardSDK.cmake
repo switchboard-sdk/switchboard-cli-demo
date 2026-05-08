@@ -46,9 +46,19 @@ function(download_and_extract url file_name output_dir)
         file(MAKE_DIRECTORY ${output_dir})
         message(STATUS "Extracting ${zip_file} to ${output_dir}")
         if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-            execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf ${zip_file} WORKING_DIRECTORY ${output_dir})
+            execute_process(
+                COMMAND powershell -NoProfile -Command
+                    "Expand-Archive -Path '${zip_file}' -DestinationPath '${output_dir}' -Force"
+                RESULT_VARIABLE extract_result
+            )
         else()
-            execute_process(COMMAND unzip -q ${zip_file} WORKING_DIRECTORY ${output_dir})
+            execute_process(
+                COMMAND unzip -q ${zip_file} -d ${output_dir}
+                RESULT_VARIABLE extract_result
+            )
+        endif()
+        if(NOT extract_result EQUAL 0)
+            message(FATAL_ERROR "Failed to extract ${zip_file} (exit code ${extract_result})")
         endif()
     endif()
 
@@ -133,7 +143,19 @@ function(find_switchboard_package PACKAGE_NAME PACKAGE_VERSION)
         endif()
         set(SwitchboardSDK_FRAMEWORK_PATHS ${SwitchboardSDK_FRAMEWORK_PATHS} ${FRAMEWORK_PATH} PARENT_SCOPE)
     elseif(${SwitchboardSDK_PLATFORM} STREQUAL "windows")
-        if(EXISTS "${SWITCHBOARD_PACKAGE_DIR}/${CMAKE_SYSTEM_PROCESSOR}/Release/lib")
+        # MSVC reports AMD64 but SDK packages use x86_64
+        set(_WIN_ARCH ${CMAKE_SYSTEM_PROCESSOR})
+        if(_WIN_ARCH STREQUAL "AMD64")
+            set(_WIN_ARCH "x86_64")
+        endif()
+        if(EXISTS "${SWITCHBOARD_PACKAGE_DIR}/${_WIN_ARCH}/lib")
+            set_target_properties(${PACKAGE_NAME} PROPERTIES
+                IMPORTED_IMPLIB_RELEASE "${SWITCHBOARD_PACKAGE_DIR}/${_WIN_ARCH}/lib/${PACKAGE_NAME}.lib"
+                IMPORTED_LOCATION_RELEASE "${SWITCHBOARD_PACKAGE_DIR}/${_WIN_ARCH}/bin/${PACKAGE_NAME}.dll"
+                IMPORTED_IMPLIB "${SWITCHBOARD_PACKAGE_DIR}/${_WIN_ARCH}/lib/${PACKAGE_NAME}.lib"
+                IMPORTED_LOCATION "${SWITCHBOARD_PACKAGE_DIR}/${_WIN_ARCH}/bin/${PACKAGE_NAME}.dll"
+            )
+        elseif(EXISTS "${SWITCHBOARD_PACKAGE_DIR}/${CMAKE_SYSTEM_PROCESSOR}/Release/lib")
             set_target_properties(${PACKAGE_NAME} PROPERTIES
                 IMPORTED_IMPLIB_RELEASE "${SWITCHBOARD_PACKAGE_DIR}/${CMAKE_SYSTEM_PROCESSOR}/Release/lib/${PACKAGE_NAME}.lib"
                 IMPORTED_LOCATION_RELEASE "${SWITCHBOARD_PACKAGE_DIR}/${CMAKE_SYSTEM_PROCESSOR}/Release/bin/${PACKAGE_NAME}.dll"
@@ -182,7 +204,9 @@ find_switchboard_package("SwitchboardSDK" "${SWITCHBOARD_PACKAGE_VERSION}")
 if (SwitchboardSDK_FOUND)
     set(SwitchboardSDK_LIBRARIES ${SwitchboardSDK_LIBRARIES} "SwitchboardSDK")
     set(_sdk_base "${SwitchboardSDK_DIR}/libs/SwitchboardSDK/${SwitchboardSDK_PLATFORM}/${SWITCHBOARD_PACKAGE_VERSION}")
-    if(EXISTS "${_sdk_base}/${CMAKE_SYSTEM_PROCESSOR}/Release")
+    if(EXISTS "${_sdk_base}/x86_64/bin")
+        set(SwitchboardSDK_PACKAGE_DIRECTORIES_RELEASE ${SwitchboardSDK_PACKAGE_DIRECTORIES_RELEASE} "${_sdk_base}/x86_64/bin")
+    elseif(EXISTS "${_sdk_base}/${CMAKE_SYSTEM_PROCESSOR}/Release")
         set(SwitchboardSDK_PACKAGE_DIRECTORIES_RELEASE ${SwitchboardSDK_PACKAGE_DIRECTORIES_RELEASE} "${_sdk_base}/${CMAKE_SYSTEM_PROCESSOR}/Release")
     else()
         set(SwitchboardSDK_PACKAGE_DIRECTORIES_RELEASE ${SwitchboardSDK_PACKAGE_DIRECTORIES_RELEASE} "${_sdk_base}/Release/${CMAKE_SYSTEM_PROCESSOR}")
@@ -198,7 +222,10 @@ foreach(_comp IN LISTS SwitchboardSDK_FIND_COMPONENTS)
     if(${_comp}_FOUND)
         set(package_dir "${SwitchboardSDK_DIR}/libs/${_comp}/${SwitchboardSDK_PLATFORM}/${SWITCHBOARD_PACKAGE_VERSION}")
         message(STATUS "Found SwitchboardSDK component: ${_comp} at ${package_dir}")
-        if(EXISTS "${package_dir}/${CMAKE_SYSTEM_PROCESSOR}/Release/bin")
+        if(EXISTS "${package_dir}/x86_64/bin")
+            message(STATUS "Adding ${package_dir}/x86_64/bin to package directories for ${_comp}")
+            set(SwitchboardSDK_PACKAGE_DIRECTORIES_RELEASE ${SwitchboardSDK_PACKAGE_DIRECTORIES_RELEASE} "${package_dir}/x86_64/bin")
+        elseif(EXISTS "${package_dir}/${CMAKE_SYSTEM_PROCESSOR}/Release/bin")
             message(STATUS "Adding ${package_dir}/${CMAKE_SYSTEM_PROCESSOR}/Release/bin to package directories for ${_comp}")
             set(SwitchboardSDK_PACKAGE_DIRECTORIES_RELEASE ${SwitchboardSDK_PACKAGE_DIRECTORIES_RELEASE} "${package_dir}/${CMAKE_SYSTEM_PROCESSOR}/Release/bin")
         elseif(EXISTS "${package_dir}/Release/${CMAKE_SYSTEM_PROCESSOR}/bin")
