@@ -46,19 +46,40 @@ function(download_and_extract url file_name output_dir)
         file(MAKE_DIRECTORY ${output_dir})
         message(STATUS "Extracting ${zip_file} to ${output_dir}")
         if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+            # cmake -E tar on Windows may silently fail on certain zips; try it
+            # first, then fall back to PowerShell if the output directory is empty.
             execute_process(
-                COMMAND powershell -NoProfile -Command
-                    "Expand-Archive -Path '${zip_file}' -DestinationPath '${output_dir}' -Force"
+                COMMAND ${CMAKE_COMMAND} -E tar xf ${zip_file}
+                WORKING_DIRECTORY ${output_dir}
                 RESULT_VARIABLE extract_result
             )
+            file(GLOB _check_extracted "${output_dir}/*")
+            if(NOT _check_extracted)
+                message(STATUS "cmake -E tar produced no output, trying PowerShell Expand-Archive...")
+                execute_process(
+                    COMMAND powershell -NoProfile -Command
+                        "Expand-Archive -LiteralPath '${zip_file}' -DestinationPath '${output_dir}' -Force"
+                    RESULT_VARIABLE extract_result
+                    OUTPUT_VARIABLE extract_out
+                    ERROR_VARIABLE extract_err
+                )
+                message(STATUS "Expand-Archive exit=${extract_result} out=${extract_out} err=${extract_err}")
+            endif()
         else()
             execute_process(
                 COMMAND unzip -q ${zip_file} -d ${output_dir}
                 RESULT_VARIABLE extract_result
             )
+            if(NOT extract_result EQUAL 0)
+                message(FATAL_ERROR "unzip failed (exit code ${extract_result}): ${zip_file}")
+            endif()
         endif()
-        if(NOT extract_result EQUAL 0)
-            message(FATAL_ERROR "Failed to extract ${zip_file} (exit code ${extract_result})")
+        file(GLOB _final_extracted "${output_dir}/*")
+        if(NOT _final_extracted)
+            message(FATAL_ERROR
+                "Extraction of ${zip_file} produced no files in ${output_dir}.\n"
+                "cmake -E tar and PowerShell Expand-Archive both failed.\n"
+                "Verify the zip is a valid archive and that the download succeeded.")
         endif()
     endif()
 
