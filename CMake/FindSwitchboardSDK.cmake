@@ -4,7 +4,7 @@
 set(SwitchboardSDK_FOUND FALSE)
 
 if(NOT DEFINED SWITCHBOARD_PACKAGE_VERSION)
-    set(SWITCHBOARD_PACKAGE_VERSION "3.2.1") # Default version
+    set(SWITCHBOARD_PACKAGE_VERSION "3.2.2") # Default version
 endif()
 
 # Detect platform (adjust as needed)
@@ -45,12 +45,46 @@ function(download_and_extract url file_name output_dir)
     if(NOT EXISTS ${output_dir})
         file(MAKE_DIRECTORY ${output_dir})
         message(STATUS "Extracting ${zip_file} to ${output_dir}")
-        execute_process(COMMAND ${CMAKE_COMMAND} -E tar xzf ${zip_file} WORKING_DIRECTORY ${output_dir})
+        if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+            execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf ${zip_file} WORKING_DIRECTORY ${output_dir})
+        else()
+            execute_process(COMMAND unzip -q ${zip_file} WORKING_DIRECTORY ${output_dir})
+        endif()
     endif()
 
     # Ensure extraction was successful
     if(NOT EXISTS "${output_dir}")
         message(FATAL_ERROR "Failed to extract ${file_name}")
+    endif()
+
+    # On macOS, xcframework zips omit Versions/Current and the top-level Resources
+    # symlink. NSBundle bundleForClass: relies on these to locate bundled resources
+    # (e.g. silero_vad.onnx). Create them if missing.
+    if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+        file(GLOB_RECURSE _all_items LIST_DIRECTORIES true "${output_dir}/*")
+        foreach(_item IN LISTS _all_items)
+            if(IS_DIRECTORY "${_item}" AND "${_item}" MATCHES "\\.framework$"
+                    AND IS_DIRECTORY "${_item}/Versions")
+                file(GLOB _ver_entries LIST_DIRECTORIES true "${_item}/Versions/*")
+                set(_ver_dirs "")
+                foreach(_entry IN LISTS _ver_entries)
+                    if(IS_DIRECTORY "${_entry}" AND NOT IS_SYMLINK "${_entry}")
+                        list(APPEND _ver_dirs "${_entry}")
+                    endif()
+                endforeach()
+                if(_ver_dirs)
+                    list(GET _ver_dirs 0 _first_ver)
+                    get_filename_component(_ver_name "${_first_ver}" NAME)
+                    if(NOT EXISTS "${_item}/Versions/Current")
+                        file(CREATE_LINK "${_ver_name}" "${_item}/Versions/Current" SYMBOLIC)
+                    endif()
+                    if(IS_DIRECTORY "${_item}/Versions/${_ver_name}/Resources"
+                            AND NOT EXISTS "${_item}/Resources")
+                        file(CREATE_LINK "Versions/Current/Resources" "${_item}/Resources" SYMBOLIC)
+                    endif()
+                endif()
+            endif()
+        endforeach()
     endif()
 endfunction()
 
