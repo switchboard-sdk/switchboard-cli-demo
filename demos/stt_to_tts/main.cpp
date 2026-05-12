@@ -39,7 +39,7 @@ int main(int argc, const char* argv[]) {
         { "appSecret", "demo" },
         { "extensions", SBAnyMap({
             {"Sherpa", SBAnyMap()},
-            {"SileroVAD", SBAnyMap()},
+            {"Silero", SBAnyMap()},
             {"Whisper", SBAnyMap()}
         })}
     });

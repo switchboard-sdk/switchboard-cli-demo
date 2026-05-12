@@ -33,7 +33,7 @@ int main(int argc, const char* argv[]) {
         { "appID", "demo" },
         { "appSecret", "demo" },
         { "extensions", SBAnyMap({
-            {"SileroVAD", SBAnyMap()}
+            {"Silero", SBAnyMap()}
         })}
     });
     Switchboard::initialize(sdkConfig);
